@@ -1,6 +1,8 @@
 import sqlite3
 import asyncio
 import os
+import logging
+import sys
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
@@ -9,6 +11,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiohttp import web
+
+# Логирование ошибок в файл
+logging.basicConfig(
+    filename='errors.log',
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8878883808:AAGgJ9FS3P-rSy0t7z2fJ4wmk4dd6ILsaPY")
 bot = Bot(token=BOT_TOKEN)
@@ -320,12 +329,19 @@ async def handle(request):
     return web.Response(text="OK")
 
 async def main():
-    app = web.Application()
-    app.router.add_get('/', handle)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 10000)))
-    await site.start()
-    await dp.start_polling(bot)
+    try:
+        app = web.Application()
+        app.router.add_get('/', handle)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, '0.0.0.0', int(os.environ.get('PORT', 10000)))
+        await site.start()
+        await dp.start_polling(bot)
+    except Exception as e:
+        logging.error(f"BOT CRASH: {str(e)}", exc_info=True)
 
-asyncio.run(main())
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        logging.error(f"MAIN CRASH: {str(e)}", exc_info=True)
